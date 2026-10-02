@@ -1,0 +1,22 @@
+{
+    "name": "SurfaceSystem.Editor",
+    "rootNamespace": "SurfaceSystem",
+    "references": [
+        "SurfaceSystem.Runtime",
+        "PoolSystem.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "HAS_EVENT_SYSTEM",
+        "HAS_UNITASK"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

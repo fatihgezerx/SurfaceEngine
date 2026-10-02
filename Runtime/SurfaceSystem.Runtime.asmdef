@@ -1,0 +1,21 @@
+{
+    "name": "SurfaceSystem.Runtime",
+    "rootNamespace": "SurfaceSystem",
+    "references": [
+        "EventSystem.Runtime",
+        "UniTask",
+        "PoolSystem.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "HAS_EVENT_SYSTEM",
+        "HAS_UNITASK"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

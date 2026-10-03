@@ -12,12 +12,12 @@ using UnityEngine.Networking;
 namespace SurfaceSystem.Setup
 {
     /// <summary>
-    /// Keeps Surface System from ever breaking a project that doesn't have its dependencies yet.
+    /// Keeps Surface Engine from ever breaking a project that doesn't have its dependencies yet.
     /// </summary>
     /// <remarks>
     /// This assembly references nothing, so it always compiles. Whenever scripts reload or an assembly
     /// definition appears or disappears, it looks for each dependency's assembly definition and sets or
-    /// clears that dependency's scripting define symbol (e.g. <c>HAS_UNITASK</c>). Surface System's own
+    /// clears that dependency's scripting define symbol (e.g. <c>HAS_UNITASK</c>). Surface Engine's own
     /// assemblies list those symbols as Define Constraints, so while a dependency is missing they are
     /// simply left out of compilation - no errors - and this guard offers to install what's missing:
     /// <list type="bullet">
@@ -26,21 +26,20 @@ namespace SurfaceSystem.Setup
     /// <c>Assets/Scripts/...</c> - exactly as if it had been copied there by hand, so every file stays
     /// visible and editable.</item>
     /// </list>
-    /// It also keeps <c>HAS_SURFACE_SYSTEM</c> set while Surface System is in the project, so code that
-    /// uses it from outside can be left out of compilation once it's removed. When Surface System is
-    /// deleted, the guard clears every symbol it manages, since nothing would keep them up to date
-    /// afterwards; the guards of other systems still in the project set the shared ones again after the reload.
+    /// It also keeps <c>HAS_SURFACE_SYSTEM</c> set while Surface Engine is in the project, so code that
+    /// uses it from outside can be left out of compilation once it's removed. When Surface Engine is
+    /// deleted, the guard clears its own symbol and sets the shared ones to what is still installed, so other systems' assemblies that need them keep compiling.
     /// </remarks>
     [InitializeOnLoad]
     internal sealed class DependencyGuard : AssetPostprocessor, IActiveBuildTargetChanged
     {
-        internal const string SystemName = "Surface System";
+        internal const string SystemName = "Surface Engine";
         private const string DeclinedKey = "SurfaceSystem.Setup.DeclinedDependencies";
         private const string SetupAsmdefFile = "SurfaceSystem.Setup.asmdef";
         private const string OwnDefine = "HAS_SURFACE_SYSTEM";
         private const string Branch = "main";
 
-        /// <summary>Everything Surface System uses. Optional ones (with a purpose) only enable extra features.</summary>
+        /// <summary>Everything Surface Engine uses. Optional ones (with a purpose) only enable extra features.</summary>
         internal static readonly Dependency[] Dependencies =
         {
             Dependency.Repository("Event System", "EventSystem.Runtime", "HAS_EVENT_SYSTEM", "https://github.com/fatihgezerx/EventSystem", "Assets/Scripts/EventSystem"),
@@ -71,16 +70,20 @@ namespace SurfaceSystem.Setup
         // symbols right away, during this import, so the compilation that follows already uses them.
         private static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
         {
-            // Surface System itself is being deleted: clear every symbol it manages, or a leftover one
+            // Surface Engine itself is being deleted: clear every symbol it manages, or a leftover one
             // (e.g. HAS_EVENT_SYSTEM once Event System is gone too) would let a later copy compile against
             // a missing dependency. Also forget an earlier "Not now", so a fresh copy asks again.
             if (ContainsFile(deleted, SetupAsmdefFile))
             {
                 SessionState.EraseString(DeclinedKey);
+                // Dependency symbols are shared with other systems' assemblies (their Define Constraints), so they
+                // are set to what is actually installed now - never cleared blindly, or those assemblies would be
+                // left out of compilation while everything they need is still there.
                 var symbols = new Dictionary<string, bool> { [OwnDefine] = false };
+                var assemblies = FindAssemblyDefinitions();
                 foreach (var dependency in Dependencies)
                 {
-                    symbols[dependency.Define] = false;
+                    symbols[dependency.Define] = assemblies.ContainsKey(dependency.Assembly);
                 }
 
                 ApplyDefines(symbols);
@@ -123,7 +126,7 @@ namespace SurfaceSystem.Setup
         {
             var assemblies = FindAssemblyDefinitions();
 
-            // Surface System was deleted, but this code is still loaded: Unity keeps the old scripts while
+            // Surface Engine was deleted, but this code is still loaded: Unity keeps the old scripts while
             // the project has compile errors (e.g. from code that used the deleted system). Its symbols were
             // cleared when it was deleted, so don't set any of them again.
             if (!assemblies.ContainsKey(Path.GetFileNameWithoutExtension(SetupAsmdefFile)))
@@ -479,7 +482,7 @@ namespace SurfaceSystem.Setup
         }
     }
 
-    /// <summary>One package Surface System uses.</summary>
+    /// <summary>One package Surface Engine uses.</summary>
     internal readonly struct Dependency
     {
         /// <summary>Shown to the user.</summary>

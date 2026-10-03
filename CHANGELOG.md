@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.1] - 2026-10-03
+
+### Fixed
+- Deleting Surface Engine no longer clears the define symbols it shares with other systems
+  (`HAS_EVENT_SYSTEM`, `HAS_UNITASK`, `HAS_POOL_SYSTEM`): the guard now sets them to whatever is still
+  installed. Before, removing it left Event System / UniTask users (Interaction System, Inventory System)
+  out of compilation until the symbols were re-added by hand.
+- The setup dialog now says "Surface Engine" instead of "Surface System".
+
 ## [1.0.0] - 2026-10-03
 
 ### Added

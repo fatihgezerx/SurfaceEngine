@@ -9,6 +9,10 @@
   out of compilation until the symbols were re-added by hand.
 - The setup dialog now says "Surface Engine" instead of "Surface System".
 
+### Changed
+- `SurfaceData`'s Create menu entry is now **Create > Surface Engine > Surface Data** (was Surface System). Existing
+  assets are unaffected.
+
 ## [1.0.0] - 2026-10-03
 
 ### Added

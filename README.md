@@ -71,7 +71,7 @@ errors.
 
 ## Quick Start
 
-**1. Create a Surface Data asset** via `Create > Surface System > Surface Data`.
+**1. Create a Surface Data asset** via `Create > Surface Engine > Surface Data`.
 
 - General settings sit on top: **Ground Layers** and **Default Ray Distance** (used when `Footstep`
   raycasts on its own), **Effect Lifetime** (seconds a VFX / decal stays before it is released) and

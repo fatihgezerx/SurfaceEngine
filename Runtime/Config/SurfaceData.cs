@@ -11,7 +11,7 @@ namespace SurfaceSystem
     /// texture lookup <see cref="SurfaceEngine"/> uses to identify a hit's surface. At runtime, hand this asset
     /// to <see cref="SurfaceEngine.Initialize"/>.
     /// </summary>
-    [CreateAssetMenu(menuName = "Surface System/Surface Data", fileName = "NewSurfaceData")]
+    [CreateAssetMenu(menuName = "Surface Engine/Surface Data", fileName = "NewSurfaceData")]
     public sealed class SurfaceData : ScriptableObject
     {
         [SerializeField] private SurfaceSettings settings = new();

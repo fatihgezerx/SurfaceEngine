@@ -3,6 +3,15 @@
 ## [Unreleased]
 
 ### Editor
+- The `SurfaceData` Inspector is drawn from a default layout shipped by the system (`SurfaceDataDefaultLayout`), customizable in the
+  Veneer Inspector Designer (Customize / Reset). Tabs Surfaces and Settings are layout entries (explanation note, Ground detection,
+  Sound playback and Decals cards, pool fields shown only in Pool mode). The state pill, the Compile row, the validation hints and the
+  pool type hint are registered items, and the list of surfaces (cards, textures, footstep / impact entries, drag reorder) is the
+  custom widget of `groups` (`SurfaceGroupsView`). Behaviour and saved data are unchanged; the playback mode tooltip is now one
+  tooltip on the row.
+- The `SurfaceHandler` Inspector is drawn from a default layout shipped by the system (`SurfaceHandlerDefaultLayout`), customizable in
+  the Veneer Inspector Designer (Customize / Reset). The state pill and the "not initialized" hint are registered items; the hint
+  now sits at the top of the Footsteps card and the usage note in a Usage card.
 - **Removed `Tools > Surface Engine > Create Impact Effects`** (and its generator `ImpactEffects` and the drawn textures in `ImpactTextures`). The default effects are no longer made by the system, and nothing runs by itself when the scripts load any more; effects (decal materials, bursts) are made and assigned in the project.
 - New studio-look `SurfaceData` Inspector (Veneer): header card with the surface and texture counts and a compiled /
   needs compile / empty / errors state pill, a prominent Compile button, validation hint rows (Compile-aborting names, a surface

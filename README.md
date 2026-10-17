@@ -27,6 +27,12 @@ Requires Event System and UniTask; Pool System is optional (pooled sound / decal
 `SurfaceHandler` shows the footstep ray (origin, distance) and the impact ray (distance, layers) and, in Play Mode, whether
 `SurfaceEngine` is initialized.
 
+The `SurfaceHandler` and `SurfaceData` Inspectors are drawn from default layouts that Surface Engine ships
+(`SurfaceHandlerDefaultLayout`, `SurfaceDataDefaultLayout`). In `Tools > Veneer > Inspector Designer` you can **Customize** one (a
+copy you may rearrange or extend) and **Reset** it to the system default. The system's own items (the state pills, the "not
+initialized" hint, the Compile row, the validation hints, the pool type hint and the list of surfaces) can be moved or hidden
+there, not changed.
+
 The studio look needs the optional **Veneer** system. Without it, `SurfaceData` falls back to Unity's default Inspector with
 the explanation and the Compile button, and `SurfaceHandler` to the default Inspector; everything still works. The dependency
 guard offers to download the kit into `Assets/Scripts/Veneer` the first time.

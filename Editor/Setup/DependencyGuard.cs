@@ -45,6 +45,7 @@ namespace SurfaceSystem.Setup
             Dependency.Repository("Event System", "EventSystem.Runtime", "HAS_EVENT_SYSTEM", "https://github.com/fatihgezerx/EventSystem", "Assets/Scripts/EventSystem"),
             Dependency.Package("UniTask", "UniTask", "HAS_UNITASK", "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask", "com.cysharp.unitask"),
             Dependency.Repository("Pool System", "PoolSystem.Runtime", "HAS_POOL_SYSTEM", "https://github.com/fatihgezerx/PoolSystem", "Assets/Scripts/PoolSystem", "for pooling spawned Footstep/Impact VFX and decal instances instead of Instantiate/Destroy"),
+            Dependency.Repository("Veneer", "Veneer.Editor", "HAS_VENEER", "https://github.com/fatihgezerx/Veneer", "Assets/Scripts/Veneer", "for the studio-style Surface Data and Surface Handler Inspectors"),
         };
 
         private static AddAndRemoveRequest _packageRequest;

@@ -78,6 +78,7 @@ namespace SurfaceSystem
 
             _data = null;
             _textureLookup = null;
+            ParticleTimes.Clear();
         }
 
         // ---- Footstep ----
@@ -122,7 +123,7 @@ namespace SurfaceSystem
             var entry = group.ResolveFootstep(type);
             if (entry != null)
             {
-                Play(entry.Sounds, entry.Vfx, entry.DecalPrefab, hit.point, hit.normal);
+                Play(entry.Sounds, entry.Vfx, entry.DecalMaterial, hit.point, hit.normal, ImpactShape.None, _data.Settings.PoolFootstepTypeName);
             }
 
             EventManager.Invoke(new FootstepEvent(group, type, hit.point, hit.normal, hit.collider));
@@ -141,7 +142,14 @@ namespace SurfaceSystem
             Impact(hit.point, hit.normal, hit.collider, type, hit.triangleIndex);
 
         /// <summary>Identifies and plays an Impact at an explicit point/normal/collider - for hits that don't come from a raycast (e.g. a collision event).</summary>
-        public static SurfaceGroup Impact(Vector3 point, Vector3 normal, Collider collider, ImpactType type = ImpactType.Generic, int triangleIndex = -1)
+        public static SurfaceGroup Impact(Vector3 point, Vector3 normal, Collider collider, ImpactType type = ImpactType.Generic, int triangleIndex = -1) =>
+            Impact(point, normal, collider, type, triangleIndex, ImpactShape.None);
+
+        /// <summary>
+        /// The same, with the mark's <paramref name="shape"/>: the decal is turned along the shape's direction and
+        /// sized to its length and width (a long blade leaves a long gash), or left out when the shape says so.
+        /// </summary>
+        public static SurfaceGroup Impact(Vector3 point, Vector3 normal, Collider collider, ImpactType type, int triangleIndex, ImpactShape shape)
         {
             RequireInitialized();
 
@@ -154,7 +162,7 @@ namespace SurfaceSystem
             var entry = group.ResolveImpact(type);
             if (entry != null)
             {
-                Play(entry.Sounds, entry.Vfx, entry.DecalPrefab, point, normal);
+                Play(entry.Sounds, entry.Vfx, entry.DecalMaterial, point, normal, shape, _data.Settings.PoolImpactTypeName);
             }
 
             EventManager.Invoke(new ImpactEvent(group, type, point, normal, collider));
@@ -246,108 +254,200 @@ namespace SurfaceSystem
 
         // ---- Playback ----
 
-        private static void Play(AudioClip[] sounds, ParticleSystem[] vfx, GameObject decalPrefab, Vector3 point, Vector3 normal)
+        /// <summary>
+        /// What lays decals on surfaces. Provided by the optional decals assembly (URP's Decal Projector), which registers it
+        /// by itself; null means no decals can be drawn, and the sound and VFX of an impact play without one.
+        /// </summary>
+        public static IDecalPainter DecalPainter { get; set; }
+
+        // Seconds a particle prefab plays for (its duration plus its longest particle), looked up once per prefab.
+        private static readonly Dictionary<ParticleSystem, float> ParticleTimes = new();
+        private static bool _warnedNoPainter;
+
+        // One host object plays a whole impact: it holds the sound (an AudioSource), the decal (projected from it) and the
+        // particles (a child), and goes back to its pool when they are done. Nothing is made for what an entry does not have.
+        private static void Play(AudioClip[] sounds, ParticleSystem[] vfx, Material decalMaterial, Vector3 point, Vector3 normal, in ImpactShape shape, string poolTypeName)
         {
-            if (sounds.Length > 0)
+            var clip = PickOne(sounds);
+            var effect = PickOne(vfx);
+            var decal = shape.SkipDecal ? null : decalMaterial;
+            if (clip == null && effect == null && decal == null)
             {
-                PlayOneShotAudio(sounds[UnityEngine.Random.Range(0, sounds.Length)], point).Forget();
+                return;
             }
 
-            var rotation = Quaternion.LookRotation(normal.sqrMagnitude > 0f ? normal : Vector3.up);
-
-            if (vfx.Length > 0)
-            {
-                var chosen = vfx[UnityEngine.Random.Range(0, vfx.Length)];
-                if (chosen != null)
-                {
-                    SpawnTimed(chosen.gameObject, point, rotation, _data.Settings.EffectLifetime).Forget();
-                }
-            }
-
-            if (decalPrefab != null)
-            {
-                SpawnTimed(decalPrefab, point, rotation, _data.Settings.EffectLifetime).Forget();
-            }
+            PlayAsync(clip, effect, decal, point, normal, shape, poolTypeName).Forget();
         }
 
-        // Routes to whichever AudioPlaybackMode the data is set to - see AudioPlaybackMode for what each does.
-        private static async UniTaskVoid PlayOneShotAudio(AudioClip clip, Vector3 point)
+        private static T PickOne<T>(T[] items) where T : class =>
+            items == null || items.Length == 0 ? null : items[UnityEngine.Random.Range(0, items.Length)];
+
+        private static async UniTaskVoid PlayAsync(AudioClip clip, ParticleSystem effect, Material decal, Vector3 point, Vector3 normal, ImpactShape shape, string poolTypeName)
         {
             var settings = _data.Settings;
-            switch (settings.AudioPlaybackMode)
-            {
-                case AudioPlaybackMode.Pool:
-                    await PlayPooledAudio(clip, point, settings.PoolAudioTypeName);
-                    return;
-
-                default:
-                    // Instantiate needs no configuration of its own - this is exactly what PlayClipAtPoint already does.
-                    AudioSource.PlayClipAtPoint(clip, point);
-                    return;
-            }
-        }
-
-        // Fetches an instance from the PoolSystem pool named `poolTypeName` (the PoolTypes member its prefab was
-        // Compiled into) and releases it back once the clip finishes. Falls back to AudioSource.PlayClipAtPoint -
-        // logging why - if the name doesn't resolve to a registered pool.
-        private static async UniTask PlayPooledAudio(AudioClip clip, Vector3 point, string poolTypeName)
-        {
-            if (!TryPoolGetByName(poolTypeName, out var instance))
-            {
-                Debug.LogWarning($"[SurfaceEngine] Audio Playback Mode is Pool but '{poolTypeName}' isn't a registered PoolSystem type - falling back to AudioSource.PlayClipAtPoint for this call.");
-                AudioSource.PlayClipAtPoint(clip, point);
-                return;
-            }
-
-            instance.transform.position = point;
-
-            if (!instance.TryGetComponent<AudioSource>(out var audioSource))
-            {
-                Debug.LogError("[SurfaceEngine] Pooled audio instance has no AudioSource component.", instance);
-                TryPoolRelease(instance);
-                return;
-            }
-
-            audioSource.clip = clip;
-            audioSource.Play();
-
             var token = _lifetimeCts.Token;
-            var canceled = await UniTask.Delay(TimeSpan.FromSeconds(clip.length), cancellationToken: token).SuppressCancellationThrow();
-            if (!canceled && instance != null)
+            normal = normal.sqrMagnitude > 1e-6f ? normal.normalized : Vector3.up;
+
+            var host = AcquireHost(point, normal, settings, poolTypeName);
+            GameObject particles = null;
+            var painted = false;
+
+            if (clip != null)
             {
-                TryPoolRelease(instance);
+                PlaySound(host, clip);
             }
-        }
 
-        // Spawns (pooled if PoolSystem knows the prefab, Instantiate otherwise) and releases/destroys it again after `lifetime`.
-        private static async UniTaskVoid SpawnTimed(GameObject prefab, Vector3 point, Quaternion rotation, float lifetime)
-        {
-            var token = _lifetimeCts.Token;
-            var instance = Spawn(prefab, point, rotation);
-            await ReleaseAfter(instance, lifetime, token);
-        }
-
-        private static async UniTask ReleaseAfter(GameObject instance, float delay, CancellationToken token)
-        {
-            var canceled = await UniTask.Delay(TimeSpan.FromSeconds(delay), cancellationToken: token).SuppressCancellationThrow();
-            if (!canceled && instance != null)
+            if (decal != null)
             {
-                Release(instance);
+                painted = Paint(host, decal, point, normal, shape, settings);
             }
+
+            if (effect != null)
+            {
+                particles = SpawnParticles(effect.gameObject, point, normal, host.transform);
+            }
+
+            // A decal stays for its whole lifetime (and fades at the end); without one the host is let go as soon as the sound and particles are done.
+            var hold = settings.EffectLifetime;
+            if (!painted)
+            {
+                hold = Mathf.Min(hold, Mathf.Max(clip != null ? clip.length : 0f, effect != null ? ParticleTime(effect) : 0f));
+            }
+
+            var fade = painted ? Mathf.Min(settings.DecalFadeTime, hold) : 0f;
+            var canceled = await UniTask.Delay(TimeSpan.FromSeconds(hold - fade), cancellationToken: token).SuppressCancellationThrow();
+            if (!canceled && fade > 0f)
+            {
+                await FadeDecal(host, fade, token);
+            }
+
+            EndHost(host, particles, painted);
         }
 
-        private static GameObject Spawn(GameObject prefab, Vector3 point, Quaternion rotation)
+        // An instance of the pool named by the footstep or impact setting (Pool mode), else - or when that pool does not exist - a new object.
+        private static GameObject AcquireHost(Vector3 point, Vector3 normal, SurfaceSettings settings, string poolTypeName)
+        {
+            GameObject host = null;
+            if (settings.AudioPlaybackMode == AudioPlaybackMode.Pool && !TryPoolGetByName(poolTypeName, out host))
+            {
+                Debug.LogWarning($"[SurfaceEngine] Audio Playback Mode is Pool but '{poolTypeName}' isn't a registered PoolSystem type - using a plain object for this call.");
+            }
+
+            if (host == null)
+            {
+                host = new GameObject("Surface Impact");
+            }
+
+            host.transform.SetPositionAndRotation(point, Quaternion.LookRotation(normal));
+            return host;
+        }
+
+        private static void PlaySound(GameObject host, AudioClip clip)
+        {
+            if (!host.TryGetComponent<AudioSource>(out var source))
+            {
+                source = host.AddComponent<AudioSource>();
+                source.playOnAwake = false;
+                source.spatialBlend = 1f;
+            }
+
+            source.clip = clip;
+            source.Play();
+        }
+
+        private static bool Paint(GameObject host, Material material, Vector3 point, Vector3 normal, in ImpactShape shape, SurfaceSettings settings)
+        {
+            var painter = DecalPainter;
+            if (painter == null)
+            {
+                if (!_warnedNoPainter)
+                {
+                    _warnedNoPainter = true;
+                    Debug.LogWarning("[SurfaceEngine] A decal material is set, but nothing can draw decals: they need the Universal Render Pipeline (the SurfaceSystem.Decals.Runtime assembly). Sounds and VFX still play.");
+                }
+
+                return false;
+            }
+
+            return painter.Paint(host, material, point, normal, in shape, settings);
+        }
+
+        // The particles of an impact (pooled if PoolSystem knows the prefab, Instantiate otherwise) as a child of the host.
+        private static GameObject SpawnParticles(GameObject prefab, Vector3 point, Vector3 normal, Transform host)
         {
             var instance = TryPoolGet(prefab, out var pooled) ? pooled : UnityEngine.Object.Instantiate(prefab);
-            instance.transform.SetPositionAndRotation(point, rotation);
+            instance.transform.SetPositionAndRotation(point, Quaternion.LookRotation(normal));
+            instance.transform.SetParent(host, true);
 
             // Play on Awake alone isn't enough for a pooled/reused instance, so play explicitly.
-            if (instance.TryGetComponent<ParticleSystem>(out var particles))
+            if (instance.TryGetComponent<ParticleSystem>(out var system))
             {
-                particles.Play();
+                system.Play(true);
             }
 
             return instance;
+        }
+
+        private static float ParticleTime(ParticleSystem prefab)
+        {
+            if (ParticleTimes.TryGetValue(prefab, out var seconds))
+            {
+                return seconds;
+            }
+
+            foreach (var system in prefab.GetComponentsInChildren<ParticleSystem>(true))
+            {
+                var main = system.main;
+                seconds = Mathf.Max(seconds, main.duration + main.startLifetime.constantMax);
+            }
+
+            seconds += 0.5f;
+            ParticleTimes[prefab] = seconds;
+            return seconds;
+        }
+
+        // The decal fades from fully visible to gone over `seconds`. Only runs while it fades.
+        private static async UniTask FadeDecal(GameObject host, float seconds, CancellationToken token)
+        {
+            var elapsed = 0f;
+            while (elapsed < seconds)
+            {
+                if (await UniTask.Yield(PlayerLoopTiming.Update, token).SuppressCancellationThrow() || host == null)
+                {
+                    return;
+                }
+
+                elapsed += Time.deltaTime;
+                DecalPainter?.SetVisible(host, 1f - Mathf.Clamp01(elapsed / seconds));
+            }
+        }
+
+        // Everything the impact put on the host comes off, and the host goes back to its pool (or is destroyed).
+        private static void EndHost(GameObject host, GameObject particles, bool painted)
+        {
+            if (particles != null)
+            {
+                particles.transform.SetParent(null, true);
+                Release(particles);
+            }
+
+            if (host == null)
+            {
+                return;
+            }
+
+            if (painted)
+            {
+                DecalPainter?.Clear(host);
+            }
+
+            if (host.TryGetComponent<AudioSource>(out var source))
+            {
+                source.Stop();
+                source.clip = null;
+            }
+
+            Release(host);
         }
 
         private static void Release(GameObject instance)

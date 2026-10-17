@@ -1,0 +1,24 @@
+{
+    "name": "SurfaceSystem.Editor.Studio",
+    "rootNamespace": "SurfaceSystem",
+    "references": [
+        "SurfaceSystem.Runtime",
+        "SurfaceSystem.Editor",
+        "Veneer.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "HAS_EVENT_SYSTEM",
+        "HAS_UNITASK",
+        "HAS_VENEER"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

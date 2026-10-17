@@ -16,12 +16,12 @@ namespace SurfaceSystem
         [SerializeField] private AudioClip[] sounds = Array.Empty<AudioClip>();
         [SerializeField] private ParticleSystem[] vfx = Array.Empty<ParticleSystem>();
 
-        [Tooltip("Optional decal prefab (e.g. a footprint) placed at the hit point. Empty = no decal.")]
-        [SerializeField] private GameObject decalPrefab;
+        [Tooltip("Optional decal material (a URP Decal shader material, e.g. a footprint) projected onto the surface at the hit point. Empty = no decal.")]
+        [SerializeField] private Material decalMaterial;
 
         public FootstepType Type => type;
         public AudioClip[] Sounds => sounds;
         public ParticleSystem[] Vfx => vfx;
-        public GameObject DecalPrefab => decalPrefab;
+        public Material DecalMaterial => decalMaterial;
     }
 }

@@ -1,35 +1,21 @@
 # Changelog
 
-## [1.0.1] - 2026-10-03
+## [Unreleased]
 
-### Fixed
-- Deleting Surface Engine no longer clears the define symbols it shares with other systems
-  (`HAS_EVENT_SYSTEM`, `HAS_UNITASK`, `HAS_POOL_SYSTEM`): the guard now sets them to whatever is still
-  installed. Before, removing it left Event System / UniTask users (Interaction System, Inventory System)
-  out of compilation until the symbols were re-added by hand.
-- The setup dialog now says "Surface Engine" instead of "Surface System".
-
-### Changed
-- `SurfaceData`'s Create menu entry is now **Create > Surface Engine > Surface Data** (was Surface System). Existing
-  assets are unaffected.
-
-## [1.0.0] - 2026-10-03
-
-### Added
-- `SurfaceEngine` static entry point (`Initialize`, `Shutdown`, `Footstep`, `Impact`, `Identify`) that
-  identifies the hit surface by texture and plays its sound, VFX and decal, with no `Update` or
-  coroutine - effect lifetimes run on cancellable `UniTask.Delay`s.
-- Surface identification from a renderer's material `mainTexture` (submesh resolved from the hit
-  triangle on multi-material renderers) and from the dominant layer on a `Terrain`.
-- `SurfaceData` ScriptableObject (**Create > Surface System > Surface Data**): general raycast settings
-  plus named `SurfaceGroup`s, each with identifying textures, `FootstepEntry` per `FootstepType` and
-  `ImpactEntry` per `ImpactType`, with a `Generic` fallback entry.
-- Custom Inspector (`SurfaceDataEditor`) with drag-to-reorder groups, a wrapping texture card grid and
-  compact Footstep / Impact cards, plus one-click **Compile** (`SurfaceCompiler`) generating the
-  `SurfaceGroups` enum from stable group ids.
-- `SurfaceHandler` component with its own footstep / impact ray settings.
-- `FootstepEvent` and `ImpactEvent`, published through EventSystem's `EventManager`.
-- `AudioPlaybackMode`: `Instantiate` (`AudioSource.PlayClipAtPoint`) or `Pool` (PoolSystem).
-- Optional PoolSystem integration for VFX, decals and audio sources.
-- `DependencyGuard`: installs UniTask, EventSystem and PoolSystem when missing and keeps the
-  `HAS_*` define symbols in sync, so the project compiles without them.
+### Editor
+- **Removed `Tools > Surface Engine > Create Impact Effects`** (and its generator `ImpactEffects` and the drawn textures in `ImpactTextures`). The default effects are no longer made by the system, and nothing runs by itself when the scripts load any more; effects (decal materials, bursts) are made and assigned in the project.
+- New studio-look `SurfaceData` Inspector (Veneer): header card with the surface and texture counts and a compiled /
+  needs compile / empty / errors state pill, a prominent Compile button, validation hint rows (Compile-aborting names, a surface
+  without textures, a texture shared by two surfaces, the enum being out of date). Two tabs: **Surfaces** (one card per surface with
+  drag-to-reorder, editable name, texture count, fold and remove; a wrapping texture grid with drop-several-at-once; Footsteps and
+  Impacts cards per kind that open to Sounds, VFX and decal material, with the same drop rules as before) and **Settings** (ground
+  layers and ray distance, sound playback mode with the Pool type names shown only in Pool mode, decal lifetime / fade / size / depth).
+  Undoable add / remove / reorder. Surface folds keep their old EditorPrefs key; the open state of footstep / impact cards is a new key.
+- New studio-look `SurfaceHandler` Inspector (footstep ray, impact ray, Play Mode ready / not initialized pill).
+- The studio Inspectors live in their own gated assembly `SurfaceSystem.Editor.Studio` (needs `HAS_VENEER`);
+  `SurfaceSystem.Editor` keeps the compile pipeline and the impact effect maker and, without the kit, a small fallback Inspector
+  (default drawing plus the explanation and a Compile button).
+- `Editor/Setup/DependencyGuard`: the optional Veneer is detected (`HAS_VENEER`) and offered for download.
+- Brand: orange-brown accent, `SurfaceBrand` and `Editor/Brand/SurfaceBrand.uss`.
+- Removed the IMGUI card editor and `GroupDragReorder`. Dropped: the inner scroll and bottom fade of a long texture grid (the grid wraps
+  fully now). `SurfaceCompiler.ToIdentifier` became internal so the Inspector validates names with Compile's own rule.

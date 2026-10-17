@@ -1,0 +1,325 @@
+/*
+ * Surface Engine - brand and Surface Data Inspector styles, added on top of the Veneer sheet.
+ *
+ * The accent is the exact Surface Engine orange-brown (#D9822B). The brand passes the class "surface-accent" as its accent class,
+ * so the kit adds no accent preset of its own and these rules are the only ones that set the accent variables.
+ * The rest styles the surface cards, the texture grid and the footstep / impact entries. Spacing is margins only (no gap in USS).
+ */
+
+.vn-root.surface-accent {
+    --vn-accent: #D9822B;
+    --vn-accent-soft: rgba(217, 130, 43, 0.16);
+    --vn-accent-line: rgba(217, 130, 43, 0.55);
+    --vn-pressed: rgba(217, 130, 43, 0.24);
+}
+
+.vn-root.vn-root--light.surface-accent {
+    --vn-accent: #B8691A;
+    --vn-accent-soft: rgba(184, 105, 26, 0.14);
+    --vn-accent-line: rgba(184, 105, 26, 0.60);
+    --vn-pressed: rgba(184, 105, 26, 0.22);
+}
+
+/* ------------------------------------------------------------------ surface card */
+
+.surf-group {
+    padding: 6px 8px 4px 4px;
+}
+
+.surf-group__head {
+    flex-direction: row;
+    align-items: center;
+}
+
+.surf-group__head > * {
+    margin-right: 4px;
+}
+
+.surf-group__head.surf-group__head--open {
+    margin-bottom: 6px;
+}
+
+.surf-group__name {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 40px;
+    margin: 0 4px 0 0;
+}
+
+.surf-group__name > .unity-base-text-field__input {
+    background-color: transparent;
+    border-width: 1px;
+    border-color: transparent;
+    font-size: 13px;
+    -unity-font-style: bold;
+    color: var(--vn-text);
+}
+
+.surf-group__name:hover > .unity-base-text-field__input {
+    border-color: var(--vn-card-border);
+}
+
+.surf-group__name:focus > .unity-base-text-field__input {
+    background-color: var(--vn-track);
+    border-color: var(--vn-accent-line);
+}
+
+.surf-group.surf-group--error .surf-group__name > .unity-base-text-field__input {
+    border-color: var(--vn-error-line);
+}
+
+.surf-group__body {
+    padding-left: 4px;
+}
+
+.surf-group__add {
+    align-self: flex-start;
+    margin: 2px 0 6px 0;
+}
+
+.surf-handle {
+    width: 16px;
+    height: 24px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    margin-right: 2px;
+}
+
+.surf-handle:hover > .vn-icon {
+    -unity-background-image-tint-color: var(--vn-accent);
+}
+
+.vn-card.surf-dragging {
+    opacity: 0.45;
+}
+
+.surf-drop-marker {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    border-radius: 1px;
+    background-color: var(--vn-accent);
+    display: none;
+}
+
+/* ------------------------------------------------------------------ sections inside a surface */
+
+.surf-section {
+    margin: 0 0 6px 0;
+    padding: 6px 8px 4px 8px;
+}
+
+.surf-section__head {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.surf-section__head > * {
+    margin-right: 4px;
+}
+
+.surf-section__hint {
+    flex-shrink: 1;
+    font-size: 10px;
+    -unity-font-style: italic;
+    color: var(--vn-text-muted);
+    white-space: normal;
+}
+
+/* ------------------------------------------------------------------ texture grid */
+
+.surf-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-bottom: 4px;
+}
+
+.surf-tex {
+    width: 54px;
+    height: 54px;
+    margin: 0 6px 6px 0;
+    border-radius: 4px;
+    border-width: 1px;
+    border-color: var(--vn-card-border);
+    background-color: var(--vn-track);
+    overflow: hidden;
+}
+
+.surf-tex:hover {
+    border-color: var(--vn-accent-line);
+}
+
+.surf-tex__thumb {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    -unity-background-scale-mode: scale-to-fit;
+    align-items: center;
+    justify-content: center;
+}
+
+.surf-tex__empty {
+    font-size: 9px;
+    white-space: normal;
+    -unity-text-align: middle-center;
+    color: var(--vn-text-muted);
+}
+
+/* The object field fills the card, shows nothing of its own but the small picker button in the corner. */
+.surf-tex__field {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    margin: 0;
+    padding: 0;
+}
+
+.surf-tex__field > .unity-base-field__label {
+    display: none;
+}
+
+.surf-tex__field .unity-object-field__input {
+    flex-grow: 1;
+    margin: 0;
+    padding: 0;
+    border-width: 0;
+    background-color: transparent;
+}
+
+.surf-tex__field .unity-object-field-display__icon,
+.surf-tex__field .unity-object-field-display__label {
+    display: none;
+}
+
+.surf-tex__field .unity-object-field__selector {
+    position: absolute;
+    right: 1px;
+    bottom: 1px;
+    width: 14px;
+    height: 14px;
+}
+
+.surf-tex__remove {
+    position: absolute;
+    right: 1px;
+    top: 1px;
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    min-height: 16px;
+    padding: 0;
+    margin: 0;
+}
+
+.surf-tex__add {
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
+    min-height: 54px;
+    margin: 0 6px 6px 0;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ------------------------------------------------------------------ footstep / impact entry */
+
+.surf-entry {
+    padding: 4px 4px 4px 6px;
+    margin: 0 0 4px 0;
+    border-radius: 5px;
+    border-width: 1px;
+    border-left-width: 3px;
+    border-color: transparent;
+    background-color: var(--vn-track);
+}
+
+.surf-entry.surf-entry--warn {
+    border-left-color: var(--vn-warn);
+}
+
+.surf-entry__head {
+    flex-direction: row;
+    align-items: center;
+}
+
+.surf-entry__head > * {
+    margin-right: 4px;
+}
+
+.surf-entry__type {
+    width: 110px;
+    flex-shrink: 0;
+    margin: 0 4px 0 0;
+}
+
+.surf-entry__body {
+    padding: 6px 2px 2px 2px;
+}
+
+.surf-entry__hint {
+    margin: 4px 0 0 0;
+}
+
+/* ------------------------------------------------------------------ object list (sounds / VFX) */
+
+.surf-list {
+    margin: 0 0 6px 0;
+    padding: 4px 6px 2px 6px;
+    border-radius: 4px;
+    background-color: var(--vn-card);
+    border-width: 1px;
+    border-color: var(--vn-card-border);
+}
+
+.surf-list__head {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.surf-list__head > * {
+    margin-right: 4px;
+}
+
+.surf-list__title {
+    font-size: 11px;
+    -unity-font-style: bold;
+    color: var(--vn-text);
+}
+
+.surf-list__row {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 3px;
+}
+
+.surf-list__row > ObjectField {
+    flex-grow: 1;
+    flex-shrink: 1;
+    min-width: 40px;
+    margin: 0 4px 0 0;
+}
+
+.surf-list__row > ObjectField > .unity-base-field__label {
+    display: none;
+}
+
+.surf-list__none {
+    font-size: 10px;
+    -unity-font-style: italic;
+    color: var(--vn-text-muted);
+    margin: 0 0 4px 2px;
+}
+
+.surf-decal {
+    margin: 0 0 4px 0;
+}

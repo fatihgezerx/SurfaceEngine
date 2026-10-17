@@ -115,8 +115,9 @@ namespace SurfaceSystem
 
         private static string NormalizeNewlines(string text) => text.Replace("\r\n", "\n");
 
-        // "Deep Snow" -> "DeepSnow", "ak-47" -> "Ak47", "9mm Ammo" -> "_9mmAmmo".
-        private static string ToIdentifier(string raw)
+        // "Deep Snow" -> "DeepSnow", "ak-47" -> "Ak47", "9mm Ammo" -> "_9mmAmmo". Internal so the studio Inspector
+        // validates names with exactly the rule Compile uses.
+        internal static string ToIdentifier(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw))
             {

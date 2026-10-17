@@ -1,0 +1,27 @@
+{
+    "name": "SurfaceSystem.Decals.Runtime",
+    "rootNamespace": "SurfaceSystem",
+    "references": [
+        "SurfaceSystem.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "HAS_EVENT_SYSTEM",
+        "HAS_UNITASK",
+        "HAS_URP_DECALS"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.render-pipelines.universal",
+            "expression": "14.0.0",
+            "define": "HAS_URP_DECALS"
+        }
+    ],
+    "noEngineReferences": false
+}

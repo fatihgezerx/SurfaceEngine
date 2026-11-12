@@ -19,6 +19,7 @@ namespace SurfaceSystem
     internal sealed class SurfaceGroupsView
     {
         private const string GroupsPath = "groups";
+        private const string TrailPath = "trail";
         private const string TitleRowClass = "vn-card__title";
 
         private readonly SurfaceDataSession session;
@@ -212,6 +213,10 @@ namespace SurfaceSystem
                     {
                         hash = hash * 31 + (entry != null ? entry.Sounds.Length * 7 + entry.Vfx.Length * 3 + (entry.DecalMaterial != null ? 1 : 0) : 0);
                     }
+
+                    // Only whether kick-up particles are set: it decides if the speed rows exist. The other trail values are bound
+                    // controls that follow Undo and edits by themselves, and a rebuild while a slider is dragged would drop the drag.
+                    hash = hash * 31 + (group.Trail != null && group.Trail.KickUp != null ? 1 : 0);
                 }
 
                 return hash;
@@ -307,6 +312,7 @@ namespace SurfaceSystem
                 body.Add(BuildTextures(current, index));
                 body.Add(BuildEntries(current, index, key, SurfaceEntryKind.Footstep));
                 body.Add(BuildEntries(current, index, key, SurfaceEntryKind.Impact));
+                body.Add(BuildTrail(current));
             }
 
             if (!collapsed)
@@ -560,10 +566,9 @@ namespace SurfaceSystem
 
             var head = new VisualElement();
             head.AddToClassList("surf-entry__head");
-            var typeField = new EnumField((Enum)Enum.ToObject(enumType, 0));
+            VeneerDropdownField typeField = VeneerControls.EnumDropdownField(type);
             typeField.AddToClassList("surf-entry__type");
             typeField.tooltip = "What this card is for. Each kind can appear once per surface; a repeated kind is ignored.";
-            typeField.BindProperty(type);
             head.Add(typeField);
 
             int sounds = soundsArray.arraySize;
@@ -589,17 +594,21 @@ namespace SurfaceSystem
             card.Add(hint);
             entryViews.Add(new EntryView { Group = groupIndex, Kind = kind, Entry = index, Card = card, Hint = hint });
 
-            // Keeps the remembered open state with the card when its kind is changed.
-            typeField.RegisterValueChangedCallback(evt =>
+            // Keeps the remembered open state with the card when its kind is changed (the dropdown has written the property by the time
+            // this runs: its own handler was registered first).
+            int previousKind = type.intValue;
+            typeField.Changed += _ =>
             {
-                string oldKey = MakeEntryKey(groupKey, kind, Convert.ToInt32(evt.previousValue));
-                string newKey = MakeEntryKey(groupKey, kind, Convert.ToInt32(evt.newValue));
+                int newKind = type.intValue;
+                string oldKey = MakeEntryKey(groupKey, kind, previousKind);
+                string newKey = MakeEntryKey(groupKey, kind, newKind);
+                previousKind = newKind;
                 if (openEntries.Remove(oldKey))
                 {
                     openEntries.Add(newKey);
                     SaveFolds();
                 }
-            });
+            };
 
             var body = new VisualElement();
             body.AddToClassList("surf-entry__body");
@@ -672,6 +681,75 @@ namespace SurfaceSystem
             }
 
             return dragged is GameObject prefab && prefab.TryGetComponent<ParticleSystem>(out ParticleSystem found) ? found : null;
+        }
+
+        // ------------------------------------------------------------------ trail
+
+        // What a Surface Trail Source does on this surface. Every control is bound to its property, so edits, Undo and prefab marks work
+        // without code here; the speed rows exist only while kick-up particles are set (assigning or clearing them rebuilds the card).
+        private VisualElement BuildTrail(SerializedProperty group)
+        {
+            VisualElement section = MakeSection("Trail", "move", "what a trail source does on this surface");
+            SerializedProperty trail = group.FindPropertyRelative(TrailPath);
+            SerializedProperty kickUp = trail.FindPropertyRelative("kickUp");
+
+            section.Add(VeneerControls.SliderRow(trail.FindPropertyRelative("depth"), "Print depth", "Hard", "Deep"));
+            section.Add(VeneerControls.ToggleSwitch(trail.FindPropertyRelative("water"), "Water", SurfaceBrand.Value));
+
+            // The object field takes a particle system, and a prefab that has one on its root is turned into it (as the VFX lists do).
+            VisualElement slot = VeneerControls.ObjectSlot(kickUp, "Kick-up particles", typeof(ParticleSystem), SurfaceBrand.Value);
+            string kickUpPath = kickUp.propertyPath;
+            slot.RegisterCallback<DragUpdatedEvent>(evt => OnKickUpDrag(evt, kickUpPath, false), TrickleDown.TrickleDown);
+            slot.RegisterCallback<DragPerformEvent>(evt => OnKickUpDrag(evt, kickUpPath, true), TrickleDown.TrickleDown);
+            section.Add(slot);
+
+            if (kickUp.objectReferenceValue != null)
+            {
+                section.Add(VeneerControls.NumberRow(trail.FindPropertyRelative("kickUpMinSpeed"), "From speed", "m/s"));
+                section.Add(VeneerControls.NumberRow(trail.FindPropertyRelative("kickUpFullSpeed"), "Full at speed", "m/s"));
+                section.Add(VeneerControls.NumberRow(trail.FindPropertyRelative("kickUpRate"), "Rate", "/s"));
+            }
+
+            return section;
+        }
+
+        // A prefab asset dragged onto the kick-up slot: its root particle system becomes the value.
+        private void OnKickUpDrag(EventBase evt, string kickUpPath, bool perform)
+        {
+            ParticleSystem effect = DraggedEffectPrefab();
+            if (effect == null)
+            {
+                return;
+            }
+
+            if (!perform)
+            {
+                DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+            }
+            else
+            {
+                DragAndDrop.AcceptDrag();
+                serializedObject.UpdateIfRequiredOrScript();
+                serializedObject.FindProperty(kickUpPath).objectReferenceValue = effect;
+                Commit("Set Kick-up Particles");
+                RebuildGroups();
+            }
+
+            evt.StopPropagation();
+        }
+
+        // Only prefab assets: a scene object must not end up in the data asset.
+        private static ParticleSystem DraggedEffectPrefab()
+        {
+            foreach (Object dragged in DragAndDrop.objectReferences)
+            {
+                if (dragged is GameObject prefab && EditorUtility.IsPersistent(prefab) && prefab.TryGetComponent<ParticleSystem>(out ParticleSystem found))
+                {
+                    return found;
+                }
+            }
+
+            return null;
         }
 
         // ------------------------------------------------------------------ sounds / VFX lists
@@ -821,8 +899,21 @@ namespace SurfaceSystem
             added.FindPropertyRelative("textures").arraySize = 0;
             ResetToGenericCard(added.FindPropertyRelative("footsteps"));
             ResetToGenericCard(added.FindPropertyRelative("impacts"));
+            ResetTrail(added.FindPropertyRelative(TrailPath));
             Commit("Add Surface");
             RebuildGroups();
+        }
+
+        // The copied element also carries the last surface's trail: take the defaults of a fresh entry instead.
+        private static void ResetTrail(SerializedProperty trail)
+        {
+            var defaults = new SurfaceTrailEntry();
+            trail.FindPropertyRelative("depth").floatValue = defaults.Depth;
+            trail.FindPropertyRelative("water").boolValue = defaults.Water;
+            trail.FindPropertyRelative("kickUp").objectReferenceValue = defaults.KickUp;
+            trail.FindPropertyRelative("kickUpMinSpeed").floatValue = defaults.KickUpMinSpeed;
+            trail.FindPropertyRelative("kickUpFullSpeed").floatValue = defaults.KickUpFullSpeed;
+            trail.FindPropertyRelative("kickUpRate").floatValue = defaults.KickUpRate;
         }
 
         // A new surface starts with a single Generic card (enum value 0), the fallback every other kind uses.

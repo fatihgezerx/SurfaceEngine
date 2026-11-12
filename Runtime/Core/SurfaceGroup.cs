@@ -22,6 +22,7 @@ namespace SurfaceSystem
         [SerializeField] private List<Texture2D> textures = new();
         [SerializeField] private List<FootstepEntry> footsteps = new() { new FootstepEntry() };
         [SerializeField] private List<ImpactEntry> impacts = new() { new ImpactEntry() };
+        [SerializeField] private SurfaceTrailEntry trail = new();
 
         /// <summary>The group's stable id - the same number as <see cref="Type"/>.</summary>
         public int Id => id;
@@ -30,6 +31,9 @@ namespace SurfaceSystem
         public SurfaceGroups Type => (SurfaceGroups)id;
 
         public string Header => header;
+
+        /// <summary>What a trail source does on this surface: print depth, water, kick-up particles (see <see cref="SurfaceTrails"/>).</summary>
+        public SurfaceTrailEntry Trail => trail;
 
         /// <summary>Every texture that identifies a hit as this surface (a terrain layer's diffuse, or a renderer's main texture).</summary>
         public List<Texture2D> Textures => textures;

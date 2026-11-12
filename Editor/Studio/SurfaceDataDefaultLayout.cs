@@ -5,7 +5,7 @@ namespace SurfaceSystem
 {
     /// <summary>
     /// The design of the <see cref="SurfaceData"/> Inspector that Surface Engine ships: two tabs. <b>Surfaces</b> holds the explanation
-    /// and the list of surfaces (one custom widget); <b>Settings</b> has the Ground detection, Sound playback and Decals cards. The
+    /// and the list of surfaces (one custom widget); <b>Settings</b> has the Ground detection, Sound playback, Decals and Trails cards. The
     /// state pill, the Compile row and the validation hints are the system's own items. With Veneer installed a project can copy it in
     /// the Inspector Designer and change the copy; this default is never saved as an asset.
     /// </summary>
@@ -22,8 +22,14 @@ namespace SurfaceSystem
             "Instantiate: a temporary AudioSource per sound.\n" +
             "Pool: reuse instances from a Pool System pool.";
 
+        private const string TrailsNote =
+            "Grass bending, water ripples and prints in snow or sand around the player. Materials using the Trail Grass / Trail Water / " +
+            "Trail Deform shaders react on their own; put a Surface Trail Source on anything that should leave trails.";
+
         private const string Settings = "settings.";
         private const string Mode = "settings.audioPlaybackMode";
+        private const string Trails = "settings.trails.";
+        private const string TrailsEnabled = "settings.trails.enabled";
 
         /// <inheritdoc />
         public Type TargetType => typeof(SurfaceData);
@@ -58,6 +64,25 @@ namespace SurfaceSystem
                 .Slider(Settings + "decalFadeTime", "Fade out time", "Instant", "Slow", "s")
                 .Field(Settings + "decalSize", "Default size (m)", widget: VeneerWidget.Vector)
                 .Slider(Settings + "decalDepth", "Projection depth", "Shallow", "Deep", "m")
+                .Card("Trails", "move")
+                .Note(TrailsNote)
+                .Field(TrailsEnabled, "Trails", widget: VeneerWidget.Switch)
+                .Slider(Trails + "areaSize", "Area size", "Small", "Wide", "m")
+                .ShowIf(TrailsEnabled, VeneerCondition.Equals, "true")
+                .Enum(Trails + "resolution", "Resolution", string.Empty)
+                .ShowIf(TrailsEnabled, VeneerCondition.Equals, "true")
+                .Slider(Trails + "grassRecovery", "Grass recovery", "Stays bent", "Springs back", "/s")
+                .ShowIf(TrailsEnabled, VeneerCondition.Equals, "true")
+                .Slider(Trails + "rippleFade", "Ripple fade", "Far", "Near")
+                .ShowIf(TrailsEnabled, VeneerCondition.Equals, "true")
+                .Slider(Trails + "rippleRate", "Ripple rate", "Slow", "Fast", "Hz")
+                .ShowIf(TrailsEnabled, VeneerCondition.Equals, "true")
+                .Slider(Trails + "printRecovery", "Print recovery", "Prints stay", "Fill fast", "/s")
+                .ShowIf(TrailsEnabled, VeneerCondition.Equals, "true")
+                .Slider(Trails + "identifyInterval", "Surface check", "Often", "Rarely", "s")
+                .ShowIf(TrailsEnabled, VeneerCondition.Equals, "true")
+                .Slider(Trails + "rainDropsPerSecond", "Rain drops", "Drizzle", "Downpour", "/s")
+                .ShowIf(TrailsEnabled, VeneerCondition.Equals, "true")
                 .Build();
 
             VeneerLayoutEntry playback = layout.FindEntry(Mode, out _, out _);

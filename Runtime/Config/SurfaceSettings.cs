@@ -38,6 +38,9 @@ namespace SurfaceSystem
         [Tooltip("Seconds a decal takes to fade out at the end of its life (inside the Effect Lifetime).")]
         [Range(0f, 10f)] [SerializeField] private float decalFadeTime = 2f;
 
+        [Tooltip("The trail maps: grass bending, water ripples and prints in snow or sand around the player (see SurfaceTrails).")]
+        [SerializeField] private SurfaceTrailSettings trails = new();
+
         public LayerMask GroundLayers => groundLayers;
         public AudioPlaybackMode AudioPlaybackMode => audioPlaybackMode;
         public string PoolFootstepTypeName => poolFootstepTypeName;
@@ -49,5 +52,8 @@ namespace SurfaceSystem
         public Vector2 DecalSize => decalSize;
         public float DecalDepth => decalDepth;
         public float DecalFadeTime => decalFadeTime;
+
+        /// <summary>The trail maps (grass bending, water ripples, prints) - see <see cref="SurfaceTrails"/>.</summary>
+        public SurfaceTrailSettings Trails => trails;
     }
 }

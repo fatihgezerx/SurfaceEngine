@@ -64,6 +64,11 @@ namespace SurfaceSystem
             }
 
             _lifetimeCts = new CancellationTokenSource();
+
+            if (data.Settings.Trails.Enabled)
+            {
+                SurfaceTrails.Initialize(data.Settings.Trails, data.Settings.GroundLayers);
+            }
         }
 
         /// <summary>Stops the engine: cancels every decal/VFX release still pending and drops the current data.</summary>
@@ -79,6 +84,7 @@ namespace SurfaceSystem
             _data = null;
             _textureLookup = null;
             ParticleTimes.Clear();
+            SurfaceTrails.Shutdown();
         }
 
         // ---- Footstep ----
@@ -457,6 +463,12 @@ namespace SurfaceSystem
                 UnityEngine.Object.Destroy(instance);
             }
         }
+
+        /// <summary>An instance of a particle prefab for a trail source's kick-up: pooled when PoolSystem knows the prefab, Instantiate otherwise.</summary>
+        internal static GameObject AcquireParticles(GameObject prefab) => TryPoolGet(prefab, out var pooled) ? pooled : UnityEngine.Object.Instantiate(prefab);
+
+        /// <summary>Gives back what <see cref="AcquireParticles"/> handed out.</summary>
+        internal static void ReleaseParticles(GameObject instance) => Release(instance);
 
 #if HAS_POOL_SYSTEM
         private static bool TryPoolGet(GameObject prefab, out GameObject instance) => PoolSystem.PoolManager.TryGet(prefab, out instance);

@@ -2,6 +2,31 @@
 
 ## [Unreleased]
 
+### Trails
+- **Surface Trails**: grass bends under anything that walks through it, water ripples where things wade, snow / sand / mud keep prints
+  (Red Dead Redemption 2 style) and kick up particles. Three world-aligned trail maps (`SurfaceTrails`: Bend, Ripple - a fixed-rate
+  wave-equation height field - and Deform) around a focus, stamped every frame with one instanced draw per map, re-centred and shifted
+  as the focus moves, published as shader globals (`_SurfaceTrailBend` / `_SurfaceTrailRipple` / `_SurfaceTrailDeform`,
+  `_SurfaceTrailParams`, `_SurfaceTrailTexel`). One UniTask loop at `PostLateUpdate`, alive only while sources exist; settled maps skip their pass.
+- `SurfaceTrailSource` (radius, grass bend, pressure, ripple strength): registers itself, measures its speed, identifies its surface with a
+  short raycast at an interval and runs the surface's kick-up particles (pooled through PoolSystem when known). `SurfaceWaterVolume`: a
+  trigger that marks sources as in water.
+- `SurfaceSettings.Trails` (`SurfaceTrailSettings`: enabled, area size, resolution, grass recovery, ripple fade and rate, print recovery,
+  surface check interval); `SurfaceEngine.Initialize` starts the maps when enabled and `Shutdown` stops them.
+- `SurfaceGroup.Trail` (`SurfaceTrailEntry`: print depth, water, kick-up particles with min / full speed and rate).
+- Shaders: `SurfaceEngine/Trail Grass` (bend + wind, cutout, two-sided, lit, shadow / depth / normals passes), `SurfaceEngine/Trail Water`
+  (ripple height and normals, foam, depth tint, scrolling normal maps, fresnel), `SurfaceEngine/Trail Deform` (distance-based hardware
+  tessellation, prints with a rim, bent normals, trampled tint, every pass sinks the same way) and the include `Shaders/Trails/SurfaceTrails.hlsl`.
+  Internal passes in `Resources/SurfaceEngine` (stamp, decay, ripple step, shift). Sample materials `Effects/Materials/Trail*.mat`.
+- Editor: Trails card on the Settings tab, a Trail section per surface, studio Inspectors for `SurfaceTrailSource` and `SurfaceWaterVolume`.
+- **Wind**: `SurfaceWind` component (direction, strength, gusts, gust size / speed, turbulence; optional Wind Zone bridge) publishes
+  `_SurfaceWindParams` / `_SurfaceWindGust`; `Shaders/Trails/SurfaceWind.hlsl` (`SurfaceWindAt`, `SurfaceWindFlutter`); Trail Grass leans
+  with it (`Wind influence`, material sine as the fallback) and Trail Water's normal layers drift downwind; `SurfaceWind.VelocityAt` CPU mirror.
+- `SurfaceTrails.Push(position, radius, bend, ripple, depth)` one-off impulses, `SurfaceTrails.Rain` (0..1, `Rain drops` per second in the
+  settings) and `SurfaceTrails.Clear()`; the loop also runs for rain and pushes without a source.
+- `Tools > Surface Engine > Trail Monitor` (Veneer): the three maps live, KPIs, wind, Rain slider, Push and Clear; `Editor/Studio/Shaders/TrailView.shader`.
+  Studio Inspector for `SurfaceWind`.
+
 ### Editor
 - The `SurfaceData` Inspector is drawn from a default layout shipped by the system (`SurfaceDataDefaultLayout`), customizable in the
   Veneer Inspector Designer (Customize / Reset). Tabs Surfaces and Settings are layout entries (explanation note, Ground detection,
